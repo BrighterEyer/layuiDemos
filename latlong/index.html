@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>funsplay</title>
+    <link rel="stylesheet" href="layui/css/layui.css">
+</head>
+
+<body>
+    <div id="maplocation" style="width:500px;height:500px;display: none;"></div>
+    经度<input type="text" id="lng">
+    纬度<input type="text" id="lat">
+    <button id="dian">点击我</button>
+    <script src="layui/layui.js"></script>
+    <script src="http://www.jq22.com/jquery/jquery-1.7.1.js"></script>
+
+    <script>
+    layui.config({
+        base: 'js/extend/'
+    }).use(['layer', 'LoadScript'], function() {
+        var layer = layui.layer;
+
+        // 定义需要动态引入的js文件列表
+        var scriptArr = [
+            'http://api.map.baidu.com/getscript?v=2.0&ak=826e806b86676d155282de3d37188137&services=&t=20170220193356',
+            'http://api.map.baidu.com/library/MarkerTool/1.2/src/MarkerTool_min.js',
+            'http://api.map.baidu.com/library/CityList/1.4/src/CityList_min.js'
+        ];
+        // 从索引i=0的文件开始引入，i++直到最后一个引入完成后回调callback
+        layui.LoadScript(scriptArr, 0, function() {
+
+
+            $("#dian").click(function() {
+                layer.open({
+                    type: 1,
+                    area: "500px",
+                    title: "测试",
+                    content: $('#maplocation'),
+                    success: function() {
+                        var map = new BMap.Map("maplocation"); // 创建地图实例 
+                        map.enableScrollWheelZoom(); //启用滚轮放大缩小，默认禁用
+                        var point = new BMap.Point(116.404, 39.915); // 创建点坐标 
+                        map.centerAndZoom(point, 12);
+
+                        function myFun(result) {
+                            var cityName = result.name;
+                            map.setCenter(cityName);
+                            console.lng("当前定位城市:"+cityName);
+                        }
+                        var myCity = new BMap.LocalCity();
+                        myCity.get(myFun);
+                        var marker = new BMap.Marker(map.getCenter()); // 创建标注
+                        map.addOverlay(marker); // 将标注添加到地图中
+                        marker.enableDragging(); //可拖拽
+                        //marker.setAnimation(BMAP_ANIMATION_BOUNCE); //跳动的动画
+                        map.addEventListener("click", function(e) {
+                            console.log(e.point.lng+","+e.point.lat);// 单击地图获取坐标点；
+                            $('#lng').val(e.point.lng);
+                            $('#lat').val(e.point.lat);
+                            map.panTo(new BMap.Point(e.point.lng,e.point.lat));// map.panTo方法，把点击的点设置为地图中心点  
+                        });
+                        marker.addEventListener("dragend", function(e) { //拖拽标注获取标注坐标
+                            //console.log("当前位置：" + e.point.lng + ", " + e.point.lat);           //可拖拽的标注 
+                            $("#lng").val(e.point.lng);
+                            $("#lat").val(e.point.lat);
+                        })
+                        //加载完成之后,改变标注点坐标,使之和当前定位的城市基本相符
+                        map.addEventListener("tilesloaded", function() {
+                            var newpoint = map.getCenter();
+                            marker.setPosition(newpoint);
+                        });
+                    },
+                    cancel: function() {}
+                });
+            });
+        });
+    });
+    </script>
+</body>
+
+</html>
